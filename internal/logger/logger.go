@@ -1,24 +1,26 @@
 package logger
 
 import (
+	"io"
 	"os"
 	"time"
 
-	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
-func New() zerolog.Logger {
-
-	_ = godotenv.Load()
-
+// New creates and returns an isolated structured logger.
+// In development, it outputs human-friendly, colorized console logs.
+// In production, it outputs structured JSON for log aggregation systems.
+func New(env string) zerolog.Logger {
 	zerolog.TimeFieldFormat = time.RFC3339
 
-	if os.Getenv("GIN_MODE") != "production" {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
+	var output io.Writer = os.Stdout
+	if env != "production" {
+		output = zerolog.ConsoleWriter{
+			Out:        os.Stdout,
+			TimeFormat: time.RFC3339,
+		}
 	}
 
-	return log.Logger
-
+	return zerolog.New(output).With().Timestamp().Logger()
 }
