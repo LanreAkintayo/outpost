@@ -7,22 +7,35 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/LanreAkintayo/outpost/internal/config"
+	"github.com/LanreAkintayo/outpost/internal/middleware"
 )
 
+// RouteRegistrar defines a component capable of mounting its endpoints onto a Gin router group.
+type RouteRegistrar interface {
+	RegisterRoutes(rg *gin.RouterGroup)
+}
+
+// RouterParams encapsulates dependencies for building the HTTP router.
+type RouterParams struct {
+	Config          *config.Config
+	Logger          zerolog.Logger
+	AuthMiddleware  gin.HandlerFunc
+	PublicRoutes    []RouteRegistrar
+	ProtectedRoutes []RouteRegistrar
+}
+
 // New initializes and configures a *gin.Engine with middlewares and route groups.
-// Because it returns a pure *gin.Engine, it can be tested directly with httptest
-// without needing a live network listener.
-func New(cfg *config.Config, log zerolog.Logger) *gin.Engine {
-	// Set Gin mode (debug, release, test) from configuration
-	gin.SetMode(cfg.Server.GinMode)
+func New(params RouterParams) *gin.Engine {
+	gin.SetMode(params.Config.Server.GinMode)
 
 	r := gin.New()
 
-	// Global Middlewares
-	r.Use(gin.Recovery())
-	r.Use(corsMiddleware())
+	// Global Middlewares (Executed in order)
+	r.Use(middleware.Recovery(params.Logger))
+	r.Use(middleware.RequestLogger(params.Logger))
+	r.Use(middleware.CORS())
 
-	// Health Check
+	// Health Check (Public, unauthenticated)
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "healthy",
@@ -30,27 +43,23 @@ func New(cfg *config.Config, log zerolog.Logger) *gin.Engine {
 		})
 	})
 
-	// API v1 Route Group (domain routes will be registered here)
+	// API v1
 	v1 := r.Group("/api/v1")
 	{
-		// Placeholder for v1 routes
-		_ = v1
+		// Public Routes
+		for _, registrar := range params.PublicRoutes {
+			registrar.RegisterRoutes(v1)
+		}
+
+		// Protected Route Group (Requires Bearer API key authentication)
+		if params.AuthMiddleware != nil {
+			protected := v1.Group("")
+			protected.Use(params.AuthMiddleware)
+			for _, registrar := range params.ProtectedRoutes {
+				registrar.RegisterRoutes(protected)
+			}
+		}
 	}
 
 	return r
-}
-
-// corsMiddleware sets standard Cross-Origin Resource Sharing headers.
-func corsMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-		if c.Request.Method == http.MethodOptions {
-			c.AbortWithStatus(http.StatusNoContent)
-			return
-		}
-		c.Next()
-	}
 }

@@ -43,27 +43,27 @@
 ### 1.5 Application Management
 - [x] `internal/models/application.go` — Application domain model
 - [x] `internal/dto/application_dto.go` — CreateApplicationRequest, ApplicationResponse
-- [ ] `internal/repository/application_repo.go` — Interface + PostgreSQL implementation
-  - [ ] `Create(app)` — insert new application
-  - [ ] `GetByID(id)` — fetch by UUID
-  - [ ] `GetByAPIKey(key)` — fetch by API key (for auth middleware)
-- [ ] `internal/service/application_service.go` — business logic
-  - [ ] Generate unique API key with prefix `op_live_` on creation
-- [ ] `internal/handler/application_handler.go` — HTTP handler
-  - [ ] `POST /api/v1/applications` — create application, return API key
-- [ ] Verify with curl: create an application, receive a UUID and API key in response
+- [x] `internal/repository/application_repo.go` — Interface + PostgreSQL implementation
+  - [x] `Create(app)` — insert new application
+  - [x] `GetByID(id)` — fetch by UUID
+  - [x] `GetByAPIKey(key)` — fetch by API key (for auth middleware)
+- [x] `internal/service/application_service.go` — business logic
+  - [x] Generate unique API key with prefix `op_live_` on creation
+- [x] `internal/handler/application_handler.go` — HTTP handler
+  - [x] `POST /api/v1/applications` — create application, return API key
+- [x] Verify with curl: create an application, receive a UUID and API key in response
 
 ### 1.6 Middleware
-- [ ] `internal/middleware/auth.go` — API key authentication
-  - [ ] Extract API key from `Authorization: Bearer <key>` header
-  - [ ] Look up application by API key in database
-  - [ ] Attach application to request context
-  - [ ] Return `401 Unauthorized` if key is missing or invalid
-- [ ] `internal/middleware/logging.go` — request logging
-  - [ ] Log: method, path, status code, duration, client IP
-- [ ] `internal/middleware/recovery.go` — panic recovery
-  - [ ] Catch panics, log stack trace, return `500 Internal Server Error`
-- [ ] Verify: unauthenticated requests get 401, all requests are logged, panics don't crash the server
+- [x] `internal/middleware/auth.go` — API key authentication
+  - [x] Extract API key from `Authorization: Bearer <key>` header
+  - [x] Look up application by API key in database
+  - [x] Attach application to request context
+  - [x] Return `401 Unauthorized` if key is missing or invalid
+- [x] `internal/middleware/logging.go` — request logging
+  - [x] Log method, path, status code, latency, client IP
+- [x] `internal/middleware/recovery.go` — panic recovery
+  - [x] Catch panics, log stack trace, return 500
+- [x] Verify: unauthenticated requests get 401, valid key proceeds, all requests are logged, panics don't crash the server
 
 ### 1.7 Endpoint Management
 - [ ] `internal/models/endpoint.go` — Endpoint domain model
