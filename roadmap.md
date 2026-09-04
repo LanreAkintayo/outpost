@@ -27,7 +27,7 @@
 - [ ] Integrate `golang-migrate` for migration management
 - [x] Migration 001: Create `applications` table
 - [ ] Migration 002: Create `event_types` table
-- [ ] Migration 003: Create `endpoints` table
+- [x] Migration 003: Create `endpoints` table
 - [ ] Migration 004: Create `subscriptions` table
 - [ ] Migration 005: Create `events` table
 - [ ] Migration 006: Create `delivery_attempts` table
@@ -66,23 +66,23 @@
 - [x] Verify: unauthenticated requests get 401, valid key proceeds, all requests are logged, panics don't crash the server
 
 ### 1.7 Endpoint Management
-- [ ] `internal/models/endpoint.go` — Endpoint domain model
-- [ ] `internal/dto/endpoint_dto.go` — CreateEndpointRequest, EndpointResponse
-- [ ] `internal/repository/endpoint_repo.go` — Interface + PostgreSQL implementation
-  - [ ] `Create(endpoint)` — insert new endpoint
-  - [ ] `GetByID(id)` — fetch by UUID
-  - [ ] `ListByApplication(appID)` — list all endpoints for an application
-  - [ ] `Delete(id)` — soft delete or hard delete an endpoint
-  - [ ] `Update(id, fields)` — update URL, description, or active status
-- [ ] `internal/service/endpoint_service.go` — business logic
-  - [ ] Generate unique secret with prefix `whsec_` on creation
-- [ ] `internal/handler/endpoint_handler.go` — HTTP handlers
-  - [ ] `POST /api/v1/endpoints` — register a new endpoint
-  - [ ] `GET /api/v1/endpoints` — list all endpoints for the authenticated application
-  - [ ] `GET /api/v1/endpoints/:id` — get endpoint details
-  - [ ] `PUT /api/v1/endpoints/:id` — update an endpoint
-  - [ ] `DELETE /api/v1/endpoints/:id` — remove an endpoint
-- [ ] Verify with curl: full CRUD operations on endpoints
+- [x] `internal/models/endpoint.go` — Endpoint domain model
+- [x] `internal/dto/endpoint_dto.go` — CreateEndpointRequest, EndpointResponse
+- [x] `internal/repository/endpoint_repo.go` — Interface + PostgreSQL implementation
+  - [x] `Create(endpoint)` — insert new endpoint
+  - [x] `GetByID(id)` — fetch by UUID
+  - [x] `ListByApplication(appID)` — list all endpoints for an application
+  - [x] `Delete(id)` — soft delete or hard delete an endpoint
+  - [x] `Update(id, fields)` — update URL, description, or active status
+- [x] `internal/service/endpoint_service.go` — business logic
+  - [x] Generate unique secret with prefix `whsec_` on creation
+- [x] `internal/handler/endpoint_handler.go` — HTTP handlers
+  - [x] `POST /api/v1/endpoints` — register a new endpoint
+  - [x] `GET /api/v1/endpoints` — list all endpoints for the authenticated application
+  - [x] `GET /api/v1/endpoints/:id` — get endpoint details
+  - [x] `PUT /api/v1/endpoints/:id` — update an endpoint
+  - [x] `DELETE /api/v1/endpoints/:id` — remove an endpoint
+- [x] Verify with curl: full CRUD operations on endpoints
 
 ### 1.8 Event Type Management
 - [ ] `internal/models/event_type.go` — EventType domain model
@@ -113,11 +113,11 @@
 - [ ] Verify with curl: subscribe an endpoint to an event type, list subscriptions
 
 ### 1.10 Router Setup
-- [ ] `internal/router/router.go` — centralized route definitions
-- [ ] Group routes under `/api/v1/`
-- [ ] Apply auth middleware to all routes except `POST /api/v1/applications`
-- [ ] Apply logging and recovery middleware globally
-- [ ] Verify: all endpoints respond correctly, unauthenticated routes are protected
+- [x] `internal/router/router.go` — centralized route definitions
+- [x] Group routes under `/api/v1/`
+- [x] Apply auth middleware to all routes except `POST /api/v1/applications`
+- [x] Apply logging and recovery middleware globally
+- [x] Verify: all endpoints respond correctly, unauthenticated routes are protected
 
 ---
 

@@ -61,13 +61,17 @@ func main() {
 	authHandler := handler.NewAuthHandler()
 	authMiddleware := middleware.AuthenticateAPIKey(appService)
 
+	endpointRepo := repository.NewPostgresEndpointRepository(dbPool)
+	endpointService := service.NewEndpointService(endpointRepo)
+	endpointHandler := handler.NewEndpointHandler(endpointService)
+
 	// Build HTTP Router (Routing & Middlewares)
 	r := router.New(router.RouterParams{
 		Config:          cfg,
 		Logger:          log,
 		AuthMiddleware:  authMiddleware,
 		PublicRoutes:    []router.RouteRegistrar{appHandler},
-		ProtectedRoutes: []router.RouteRegistrar{authHandler},
+		ProtectedRoutes: []router.RouteRegistrar{authHandler, endpointHandler},
 	})
 
 	// Initialize HTTP Server (Transport Lifecycle)

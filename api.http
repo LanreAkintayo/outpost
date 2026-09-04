@@ -1,68 +1,61 @@
-### Outpost API - Interactive HTTP Client Requests
-### Tip: If using the "REST Client" extension in VS Code/Antigravity, 
-### click "Send Request" above any block to execute it immediately.
-
 @baseUrl = http://localhost:8080
 
-###############################################################################
-# 1. Health Check (Public)
-###############################################################################
-
-### Check service health status
+### Health Check
 GET {{baseUrl}}/health
 Accept: application/json
 
-
-###############################################################################
-# 2. Application Management (Onboarding)
-###############################################################################
-
-### Create a new application tenant
+### Create Application
 # @name createApplication
 POST {{baseUrl}}/api/v1/applications
 Content-Type: application/json
 
 {
-  "name": "billing-service"
+  "name": "PayNova"
 }
 
-###
-
-### Fetch the created application by UUID
-### (Dynamically extracts ID from the createApplication response above)
-@createdAppId = {{createApplication.response.body.id}}
-
-GET {{baseUrl}}/api/v1/applications/{{createdAppId}}
+### Get Application by ID
+@appId = {{createApplication.response.body.id}}
+GET {{baseUrl}}/api/v1/applications/{{appId}}
 Accept: application/json
 
-###
-
-### Try fetching with an invalid UUID format (Expected: 400 Bad Request)
-GET {{baseUrl}}/api/v1/applications/not-a-valid-uuid
-Accept: application/json
-
-
-###############################################################################
-# 3. Authentication & Tenant Verification (Protected)
-###############################################################################
-
-### Verify token validity using the key from createApplication
-### (Expected: 200 OK with tenant information)
+### Verify API Key
 @apiKey = {{createApplication.response.body.api_key}}
-
 GET {{baseUrl}}/api/v1/auth/verify
 Authorization: Bearer {{apiKey}}
 Accept: application/json
 
-###
+### Create Endpoint
+# @name createEndpoint
+POST {{baseUrl}}/api/v1/endpoints
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
 
-### Test protected route with missing authorization header (Expected: 401 Unauthorized)
-GET {{baseUrl}}/api/v1/auth/verify
+{
+  "url": "https://api.zara.com/webhooks",
+  "description": "Zara Fulfillment Webhook"
+}
+
+### List Endpoints
+GET {{baseUrl}}/api/v1/endpoints
+Authorization: Bearer {{apiKey}}
 Accept: application/json
 
-###
-
-### Test protected route with invalid / revoked API key (Expected: 401 Unauthorized)
-GET {{baseUrl}}/api/v1/auth/verify
-Authorization: Bearer op_live_invalid_token_12345
+### Get Endpoint by ID
+@endpointId = {{createEndpoint.response.body.id}}
+GET {{baseUrl}}/api/v1/endpoints/{{endpointId}}
+Authorization: Bearer {{apiKey}}
 Accept: application/json
+
+### Update Endpoint
+PUT {{baseUrl}}/api/v1/endpoints/{{endpointId}}
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "description": "Zara Fulfillment (Paused)",
+  "status": "inactive"
+}
+
+### Delete Endpoint
+DELETE {{baseUrl}}/api/v1/endpoints/{{endpointId}}
+Authorization: Bearer {{apiKey}}
