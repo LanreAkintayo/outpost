@@ -55,6 +55,7 @@ func (h *EndpointHandler) Create(c *gin.Context) {
 		service.CreateEndpointParams{
 			URL:         req.URL,
 			Description: req.Description,
+			RecipientID: req.RecipientID,
 		})
 
 	if err != nil {
@@ -143,6 +144,7 @@ func (h *EndpointHandler) Update(c *gin.Context) {
 			URL:         req.URL,
 			Description: req.Description,
 			Status:      req.Status,
+			RecipientID: req.RecipientID,
 		})
 
 	if err != nil {

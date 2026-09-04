@@ -80,6 +80,7 @@ func TestEndpointService(t *testing.T) {
 		ep, err := svc.CreateEndpoint(ctx, appID, service.CreateEndpointParams{
 			URL:         "https://api.zara.com/webhooks",
 			Description: "Zara Main Fulfillment Webhook",
+			RecipientID: "zara",
 		})
 
 		assert.NoError(t, err)
@@ -87,6 +88,7 @@ func TestEndpointService(t *testing.T) {
 		assert.Equal(t, appID, ep.ApplicationID)
 		assert.Equal(t, "https://api.zara.com/webhooks", ep.URL)
 		assert.Equal(t, "Zara Main Fulfillment Webhook", ep.Description)
+		assert.Equal(t, "zara", ep.RecipientID)
 		assert.Equal(t, models.EndpointStatusActive, ep.Status)
 		assert.True(t, strings.HasPrefix(ep.Secret, "whsec_"))
 	})

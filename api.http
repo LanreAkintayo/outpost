@@ -31,9 +31,11 @@ Authorization: Bearer {{apiKey}}
 Content-Type: application/json
 
 {
-  "url": "https://api.zara.com/webhooks",
-  "description": "Zara Fulfillment Webhook"
+  "url": "https://apiv2.zara.com/webhooks",
+  "description": "Zara Fulfillment Webhook",
+  "recipient_id": "zara"
 }
+
 
 ### List Endpoints
 GET {{baseUrl}}/api/v1/endpoints
@@ -58,4 +60,50 @@ Content-Type: application/json
 
 ### Delete Endpoint
 DELETE {{baseUrl}}/api/v1/endpoints/{{endpointId}}
+Authorization: Bearer {{apiKey}}
+
+### Create Event Type (payment.succeeded)
+# @name createEventType
+POST {{baseUrl}}/api/v1/event-types
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "name": "payment.succeeded",
+  "description": "Triggered when a charge is successfully captured"
+}
+
+### Create Event Type (payment.failed)
+POST {{baseUrl}}/api/v1/event-types
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "name": "payment.failed",
+  "description": "Triggered when a customer card payment fails"
+}
+
+### Create Event Type (Negative Test: Invalid dot-notation)
+POST {{baseUrl}}/api/v1/event-types
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "name": "paymentsucceeded",
+  "description": "Should fail because dot-notation is required"
+}
+
+### List Event Types
+GET {{baseUrl}}/api/v1/event-types
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Get Event Type by ID
+@eventTypeId = {{createEventType.response.body.id}}
+GET {{baseUrl}}/api/v1/event-types/{{eventTypeId}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Delete Event Type
+DELETE {{baseUrl}}/api/v1/event-types/{{eventTypeId}}
 Authorization: Bearer {{apiKey}}

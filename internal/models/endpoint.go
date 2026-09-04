@@ -22,6 +22,7 @@ type Endpoint struct {
 	Secret        string         `json:"secret" db:"secret"`
 	Description   string         `json:"description" db:"description"`
 	Status        EndpointStatus `json:"status" db:"status"`
+	RecipientID   string         `json:"recipient_id" db:"recipient_id"`
 	CreatedAt     time.Time      `json:"created_at" db:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at" db:"updated_at"`
 }

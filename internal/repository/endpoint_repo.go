@@ -38,8 +38,8 @@ func NewPostgresEndpointRepository(db *pgxpool.Pool) *PostgresEndpointRepository
 // Create inserts a new endpoint record and scans back the generated ID and timestamps.
 func (r *PostgresEndpointRepository) Create(ctx context.Context, endpoint *models.Endpoint) error {
 	query := `
-		INSERT INTO endpoints (application_id, url, secret, description, status)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO endpoints (application_id, url, secret, description, status, recipient_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, created_at, updated_at
 	`
 
@@ -53,6 +53,7 @@ func (r *PostgresEndpointRepository) Create(ctx context.Context, endpoint *model
 		endpoint.Secret,
 		endpoint.Description,
 		endpoint.Status,
+		endpoint.RecipientID,
 	).Scan(
 		&endpoint.ID,
 		&endpoint.CreatedAt,
@@ -68,7 +69,7 @@ func (r *PostgresEndpointRepository) Create(ctx context.Context, endpoint *model
 // GetByID fetches an endpoint by its UUID primary key.
 func (r *PostgresEndpointRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Endpoint, error) {
 	query := `
-		SELECT id, application_id, url, secret, description, status, created_at, updated_at
+		SELECT id, application_id, url, secret, description, status, recipient_id, created_at, updated_at
 		FROM endpoints
 		WHERE id = $1
 	`
@@ -81,6 +82,7 @@ func (r *PostgresEndpointRepository) GetByID(ctx context.Context, id uuid.UUID) 
 		&e.Secret,
 		&e.Description,
 		&e.Status,
+		&e.RecipientID,
 		&e.CreatedAt,
 		&e.UpdatedAt,
 	)
@@ -97,7 +99,7 @@ func (r *PostgresEndpointRepository) GetByID(ctx context.Context, id uuid.UUID) 
 // ListByApplication fetches all endpoints belonging to an application tenant ordered by created_at DESC.
 func (r *PostgresEndpointRepository) ListByApplication(ctx context.Context, appID uuid.UUID) ([]*models.Endpoint, error) {
 	query := `
-		SELECT id, application_id, url, secret, description, status, created_at, updated_at
+		SELECT id, application_id, url, secret, description, status, recipient_id, created_at, updated_at
 		FROM endpoints
 		WHERE application_id = $1
 		ORDER BY created_at DESC
@@ -119,6 +121,7 @@ func (r *PostgresEndpointRepository) ListByApplication(ctx context.Context, appI
 			&e.Secret,
 			&e.Description,
 			&e.Status,
+			&e.RecipientID,
 			&e.CreatedAt,
 			&e.UpdatedAt,
 		); err != nil {
@@ -143,14 +146,15 @@ func (r *PostgresEndpointRepository) Update(ctx context.Context, endpoint *model
 	endpoint.UpdatedAt = time.Now()
 	query := `
 		UPDATE endpoints
-		SET url = $1, description = $2, status = $3, updated_at = $4
-		WHERE id = $5
+		SET url = $1, description = $2, status = $3, recipient_id = $4, updated_at = $5
+		WHERE id = $6
 	`
 
 	tag, err := r.db.Exec(ctx, query,
 		endpoint.URL,
 		endpoint.Description,
 		endpoint.Status,
+		endpoint.RecipientID,
 		endpoint.UpdatedAt,
 		endpoint.ID,
 	)

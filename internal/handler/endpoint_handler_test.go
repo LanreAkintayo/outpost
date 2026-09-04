@@ -42,6 +42,7 @@ func (m *mockEndpointService) CreateEndpoint(ctx context.Context, appID uuid.UUI
 		URL:           params.URL,
 		Secret:        "whsec_mock12345",
 		Description:   params.Description,
+		RecipientID:   params.RecipientID,
 		Status:        models.EndpointStatusActive,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
@@ -125,6 +126,7 @@ func TestEndpointHandler(t *testing.T) {
 		reqBody := dto.CreateEndpointRequest{
 			URL:         "https://api.zara.com/webhooks",
 			Description: "Zara Webhooks",
+			RecipientID: "zara",
 		}
 		bodyBytes, _ := json.Marshal(reqBody)
 
@@ -139,6 +141,7 @@ func TestEndpointHandler(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "https://api.zara.com/webhooks", resp.URL)
 		assert.Equal(t, "whsec_mock12345", resp.Secret)
+		assert.Equal(t, "zara", resp.RecipientID)
 	})
 
 	t.Run("POST /api/v1/endpoints rejects invalid URL", func(t *testing.T) {

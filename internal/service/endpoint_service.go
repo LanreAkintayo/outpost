@@ -25,12 +25,14 @@ const webhookSecretPrefix = "whsec_"
 type CreateEndpointParams struct {
 	URL         string
 	Description string
+	RecipientID string
 }
 
 type UpdateEndpointParams struct {
 	URL         *string
 	Description *string
 	Status      *models.EndpointStatus
+	RecipientID *string
 }
 
 type EndpointService interface {
@@ -67,6 +69,7 @@ func (s *endpointService) CreateEndpoint(ctx context.Context, appID uuid.UUID, p
 		Secret:        secret,
 		Description:   strings.TrimSpace(params.Description),
 		Status:        models.EndpointStatusActive,
+		RecipientID:   strings.TrimSpace(params.RecipientID),
 	}
 
 	if err := s.repo.Create(ctx, endpoint); err != nil {
@@ -119,6 +122,10 @@ func (s *endpointService) UpdateEndpoint(ctx context.Context, appID, id uuid.UUI
 			return nil, ErrInvalidStatus
 		}
 		endpoint.Status = *params.Status
+	}
+
+	if params.RecipientID != nil {
+		endpoint.RecipientID = strings.TrimSpace(*params.RecipientID)
 	}
 
 	if err := s.repo.Update(ctx, endpoint); err != nil {

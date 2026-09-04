@@ -26,8 +26,8 @@
 - [x] Set up database connection pool using `pgx` or `database/sql` + `lib/pq`
 - [ ] Integrate `golang-migrate` for migration management
 - [x] Migration 001: Create `applications` table
-- [ ] Migration 002: Create `event_types` table
-- [x] Migration 003: Create `endpoints` table
+- [x] Migration 002: Create `endpoints` table
+- [x] Migration 003: Create `event_types` table
 - [ ] Migration 004: Create `subscriptions` table
 - [ ] Migration 005: Create `events` table
 - [ ] Migration 006: Create `delivery_attempts` table
@@ -85,18 +85,18 @@
 - [x] Verify with curl: full CRUD operations on endpoints
 
 ### 1.8 Event Type Management
-- [ ] `internal/models/event_type.go` — EventType domain model
-- [ ] `internal/dto/event_type_dto.go` — CreateEventTypeRequest, EventTypeResponse
-- [ ] `internal/repository/event_type_repo.go` — Interface + PostgreSQL implementation
-  - [ ] `Create(eventType)` — insert new event type
-  - [ ] `GetByName(appID, name)` — look up event type by name within an application
-  - [ ] `ListByApplication(appID)` — list all event types for an application
-- [ ] `internal/service/event_type_service.go` — business logic
-  - [ ] Validate event type names follow dot-notation (e.g., `payment.completed`, `order.created`)
-- [ ] `internal/handler/event_type_handler.go` — HTTP handlers
-  - [ ] `POST /api/v1/event-types` — create an event type
-  - [ ] `GET /api/v1/event-types` — list all event types
-- [ ] Verify with curl: create and list event types
+- [x] `internal/models/event_type.go` — EventType domain model
+- [x] `internal/dto/event_type_dto.go` — CreateEventTypeRequest, EventTypeResponse
+- [x] `internal/repository/event_type_repo.go` — Interface + PostgreSQL implementation
+  - [x] `Create(eventType)` — insert new event type
+  - [x] `GetByName(appID, name)` — look up event type by name within an application
+  - [x] `ListByApplication(appID)` — list all event types for an application
+- [x] `internal/service/event_type_service.go` — business logic
+  - [x] Validate event type names follow dot-notation (e.g., `payment.completed`, `order.created`)
+- [x] `internal/handler/event_type_handler.go` — HTTP handlers
+  - [x] `POST /api/v1/event-types` — create an event type
+  - [x] `GET /api/v1/event-types` — list all event types
+- [x] Verify with curl: create and list event types
 
 ### 1.9 Subscription Management
 - [ ] `internal/models/subscription.go` — Subscription domain model

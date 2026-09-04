@@ -12,6 +12,7 @@ import (
 type CreateEndpointRequest struct {
 	URL         string `json:"url" binding:"required"`
 	Description string `json:"description" binding:"max=500"`
+	RecipientID string `json:"recipient_id" binding:"max=255"`
 }
 
 // UpdateEndpointRequest defines the expected JSON payload for modifying an endpoint.
@@ -19,6 +20,7 @@ type UpdateEndpointRequest struct {
 	URL         *string                `json:"url,omitempty"`
 	Description *string                `json:"description,omitempty"`
 	Status      *models.EndpointStatus `json:"status,omitempty"`
+	RecipientID *string                `json:"recipient_id,omitempty"`
 }
 
 // EndpointResponse represents the public API response for an endpoint.
@@ -29,6 +31,7 @@ type EndpointResponse struct {
 	Secret        string                `json:"secret"`
 	Description   string                `json:"description"`
 	Status        models.EndpointStatus `json:"status"`
+	RecipientID   string                `json:"recipient_id"`
 	CreatedAt     time.Time             `json:"created_at"`
 	UpdatedAt     time.Time             `json:"updated_at"`
 }
@@ -42,6 +45,7 @@ func ToEndpointResponse(e *models.Endpoint) EndpointResponse {
 		Secret:        e.Secret,
 		Description:   e.Description,
 		Status:        e.Status,
+		RecipientID:   e.RecipientID,
 		CreatedAt:     e.CreatedAt,
 		UpdatedAt:     e.UpdatedAt,
 	}
