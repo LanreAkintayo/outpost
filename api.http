@@ -107,3 +107,31 @@ Accept: application/json
 ### Delete Event Type
 DELETE {{baseUrl}}/api/v1/event-types/{{eventTypeId}}
 Authorization: Bearer {{apiKey}}
+
+### Subscribe Endpoint to Event Type
+# @name subscribeEndpoint
+POST {{baseUrl}}/api/v1/endpoints/{{endpointId}}/subscriptions
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "event_type_id": "{{eventTypeId}}"
+}
+
+### Duplicate Subscription (Negative Test: Conflict 409)
+POST {{baseUrl}}/api/v1/endpoints/{{endpointId}}/subscriptions
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "event_type_id": "{{eventTypeId}}"
+}
+
+### List Subscriptions for Endpoint
+GET {{baseUrl}}/api/v1/endpoints/{{endpointId}}/subscriptions
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Unsubscribe Endpoint from Event Type
+DELETE {{baseUrl}}/api/v1/endpoints/{{endpointId}}/subscriptions/{{eventTypeId}}
+Authorization: Bearer {{apiKey}}

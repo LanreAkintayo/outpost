@@ -10,8 +10,10 @@ migrate-up:
 	docker exec -i outpost-db psql -U postgres -d outpost < migrations/001_create_applications_table.up.sql
 	docker exec -i outpost-db psql -U postgres -d outpost < migrations/002_create_endpoints_table.up.sql
 	docker exec -i outpost-db psql -U postgres -d outpost < migrations/003_create_event_types_table.up.sql
+	docker exec -i outpost-db psql -U postgres -d outpost < migrations/004_create_subscriptions_table.up.sql
 
 migrate-down:
+	docker exec -i outpost-db psql -U postgres -d outpost < migrations/004_create_subscriptions_table.down.sql
 	docker exec -i outpost-db psql -U postgres -d outpost < migrations/003_create_event_types_table.down.sql
 	docker exec -i outpost-db psql -U postgres -d outpost < migrations/002_create_endpoints_table.down.sql
 	docker exec -i outpost-db psql -U postgres -d outpost < migrations/001_create_applications_table.down.sql

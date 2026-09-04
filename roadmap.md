@@ -28,7 +28,7 @@
 - [x] Migration 001: Create `applications` table
 - [x] Migration 002: Create `endpoints` table
 - [x] Migration 003: Create `event_types` table
-- [ ] Migration 004: Create `subscriptions` table
+- [x] Migration 004: Create `subscriptions` table
 - [ ] Migration 005: Create `events` table
 - [ ] Migration 006: Create `delivery_attempts` table
 - [ ] Add performance indexes on frequently queried columns
@@ -99,18 +99,18 @@
 - [x] Verify with curl: create and list event types
 
 ### 1.9 Subscription Management
-- [ ] `internal/models/subscription.go` — Subscription domain model
-- [ ] `internal/dto/subscription_dto.go` — CreateSubscriptionRequest, SubscriptionResponse
-- [ ] `internal/repository/subscription_repo.go` — Interface + PostgreSQL implementation
-  - [ ] `Create(subscription)` — subscribe an endpoint to an event type
-  - [ ] `Delete(endpointID, eventTypeID)` — unsubscribe
-  - [ ] `ListByEndpoint(endpointID)` — what event types does this endpoint listen to?
-  - [ ] `GetSubscribedEndpoints(appID, eventTypeName)` — which endpoints want this event?
-- [ ] `internal/handler/subscription_handler.go` — HTTP handlers
-  - [ ] `POST /api/v1/endpoints/:id/subscriptions` — subscribe to an event type
-  - [ ] `DELETE /api/v1/endpoints/:id/subscriptions/:event_type_id` — unsubscribe
-  - [ ] `GET /api/v1/endpoints/:id/subscriptions` — list subscriptions
-- [ ] Verify with curl: subscribe an endpoint to an event type, list subscriptions
+- [x] `internal/models/subscription.go` — Subscription domain model
+- [x] `internal/dto/subscription_dto.go` — CreateSubscriptionRequest, SubscriptionResponse
+- [x] `internal/repository/subscription_repo.go` — Interface + PostgreSQL implementation
+  - [x] `Create(subscription)` — subscribe an endpoint to an event type
+  - [x] `Delete(endpointID, eventTypeID)` — unsubscribe
+  - [x] `ListByEndpoint(endpointID)` — what event types does this endpoint listen to?
+  - [x] `GetSubscribedEndpoints(appID, eventTypeName)` — which endpoints want this event?
+- [x] `internal/handler/subscription_handler.go` — HTTP handlers
+  - [x] `POST /api/v1/endpoints/:id/subscriptions` — subscribe to an event type
+  - [x] `DELETE /api/v1/endpoints/:id/subscriptions/:event_type_id` — unsubscribe
+  - [x] `GET /api/v1/endpoints/:id/subscriptions` — list subscriptions
+- [x] Verify with curl: subscribe an endpoint to an event type, list subscriptions
 
 ### 1.10 Router Setup
 - [x] `internal/router/router.go` — centralized route definitions
