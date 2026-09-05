@@ -30,6 +30,11 @@ go.work.sum
 Thumbs.db
 LEARNING_GUIDELINES.md
 todo.md
+roadmap.md
+LEARNING_NOTES.md
+seed.http
+api.http
+
 
 # Environment files
 .env
