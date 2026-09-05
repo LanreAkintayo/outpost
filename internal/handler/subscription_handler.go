@@ -132,7 +132,13 @@ func (h *SubscriptionHandler) Unsubscribe(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.Unsubscribe(c.Request.Context(), app.ID, endpointID, eventTypeID); err != nil {
+	if err := h.service.Unsubscribe(
+		c.Request.Context(),
+		app.ID,
+		endpointID,
+		eventTypeID,
+	); err != nil {
+		
 		if errors.Is(err, repository.ErrEndpointNotFound) {
 			response.NotFound(c, "endpoint not found")
 			return

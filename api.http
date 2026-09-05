@@ -1,10 +1,12 @@
-@baseUrl = http://localhost:8080
+@baseUrl = http://127.0.0.1:8080
+@apiKey = op_live_1ef49c22c63b7b4edfc9b973a8f81c63adf3bbd64504ebf5
+@appId = 4963dec8-67a7-4b69-aff2-6f8bf4c48801
 
 ### Health Check
 GET {{baseUrl}}/health
 Accept: application/json
 
-### Create Application
+### Create Application (Skipped if already created)
 # @name createApplication
 POST {{baseUrl}}/api/v1/applications
 Content-Type: application/json
@@ -14,12 +16,10 @@ Content-Type: application/json
 }
 
 ### Get Application by ID
-@appId = {{createApplication.response.body.id}}
 GET {{baseUrl}}/api/v1/applications/{{appId}}
 Accept: application/json
 
 ### Verify API Key
-@apiKey = {{createApplication.response.body.api_key}}
 GET {{baseUrl}}/api/v1/auth/verify
 Authorization: Bearer {{apiKey}}
 Accept: application/json

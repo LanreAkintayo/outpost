@@ -6,6 +6,10 @@ db-up:
 db-down:
 	docker compose down
 
+db-clean:
+	docker exec -i outpost-db psql -U postgres -d outpost -c "TRUNCATE TABLE subscriptions, event_types, endpoints, applications CASCADE;"
+
+
 migrate-up:
 	docker exec -i outpost-db psql -U postgres -d outpost < migrations/001_create_applications_table.up.sql
 	docker exec -i outpost-db psql -U postgres -d outpost < migrations/002_create_endpoints_table.up.sql
