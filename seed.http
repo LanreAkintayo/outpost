@@ -220,3 +220,66 @@ Accept: application/json
 GET {{baseUrl}}/api/v1/endpoints/{{acmeEpId}}/subscriptions
 Authorization: Bearer {{apiKey}}
 Accept: application/json
+
+
+###############################################################################
+# STEP 6: EVENT INGESTION (MILESTONE 2.1)
+###############################################################################
+
+### 6.1 Ingest payment.succeeded for Acme Commerce
+# Should fan out to: PayNova Ledger, Fraud Shield, and Acme Commerce (3 queued)
+# @name ingestAcmePayment
+POST {{baseUrl}}/api/v1/events
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "event_type": "payment.succeeded",
+  "recipient_id": "merchant_acme_01",
+  "payload": {
+    "order_id": "ord_acme_8801",
+    "customer": {
+      "id": "cust_992",
+      "name": "Sarah Connor",
+      "email": "sarah@cyberdyne.com"
+    },
+    "amount": 25000,
+    "currency": "USD"
+  },
+  "idempotency_key": "tx_acme_sale_8801"
+}
+
+### 6.2 Ingest payment.failed for Acme Commerce
+# Should fan out to: Fraud Shield and Acme Commerce (2 queued)
+POST {{baseUrl}}/api/v1/events
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "event_type": "payment.failed",
+  "recipient_id": "merchant_acme_01",
+  "payload": {
+    "order_id": "ord_acme_8802",
+    "error_code": "insufficient_funds",
+    "amount": 10000,
+    "currency": "USD"
+  },
+  "idempotency_key": "tx_acme_failed_8802"
+}
+
+### 6.3 Idempotency Key Duplicate Test
+# Retrying with the same idempotency key returns existing event (0 queued deliveries)
+POST {{baseUrl}}/api/v1/events
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "event_type": "payment.succeeded",
+  "recipient_id": "merchant_acme_01",
+  "payload": {
+    "order_id": "ord_acme_8801",
+    "amount": 25000
+  },
+  "idempotency_key": "tx_acme_sale_8801"
+}
+

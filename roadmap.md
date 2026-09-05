@@ -140,22 +140,22 @@
 > *"When I send an event, Outpost delivers it to all subscribed endpoints with a signed payload."*
 
 ### 2.1 Event Ingestion
-- [ ] `internal/models/event.go` — Event domain model
-- [ ] `internal/dto/event_dto.go` — SendEventRequest, EventResponse
-- [ ] `internal/repository/event_repo.go` — Interface + PostgreSQL implementation
-  - [ ] `Create(event)` — store the event
-  - [ ] `GetByID(id)` — fetch event by UUID
-  - [ ] `GetByIdempotencyKey(key)` — check for duplicate events
-- [ ] `internal/service/event_service.go` — business logic
-  - [ ] Validate event type exists
-  - [ ] Check idempotency key (skip if already processed)
-  - [ ] Store event in database
-  - [ ] Look up all subscribed endpoints
-  - [ ] Create a `delivery_attempt` row (status: `pending`) for each subscribed endpoint
-  - [ ] Return `202 Accepted` to the caller
-- [ ] `internal/handler/event_handler.go` — HTTP handler
-  - [ ] `POST /api/v1/events` — accept an event for delivery
-- [ ] Verify: sending an event creates pending delivery_attempt rows in the database
+- [x] `internal/models/event.go` — Event domain model
+- [x] `internal/dto/event_dto.go` — SendEventRequest, EventResponse
+- [x] `internal/repository/event_repo.go` — Interface + PostgreSQL implementation
+  - [x] `Create(event)` — store the event
+  - [x] `GetByID(id)` — fetch event by UUID
+  - [x] `GetByIdempotencyKey(key)` — check for duplicate events
+- [x] `internal/service/event_service.go` — business logic
+  - [x] Validate event type exists
+  - [x] Check idempotency key (skip if already processed)
+  - [x] Store event in database
+  - [x] Look up all subscribed endpoints
+  - [x] Create a `delivery_attempt` row (status: `pending`) for each subscribed endpoint
+  - [x] Return `202 Accepted` to the caller
+- [x] `internal/handler/event_handler.go` — HTTP handler
+  - [x] `POST /api/v1/events` — accept an event for delivery
+- [x] Verify: sending an event creates pending delivery_attempt rows in the database
 
 ### 2.2 HMAC-SHA256 Payload Signing
 - [ ] `internal/engine/signer.go`

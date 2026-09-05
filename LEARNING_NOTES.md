@@ -188,11 +188,14 @@ Putting Gin router configuration, route groups (`/api/v1/...`), CORS middleware,
 - [internal/router/router_test.go](file:///home/larry_mosh/go-stuff/outpost/internal/router/router_test.go)
 
 ### The Concept
+
 Separating the **Router** (`internal/router/router.go`) from the **Server** (`internal/server/server.go`):
+
 - **`router.New(cfg)`:** Builds and returns a `*gin.Engine`. It defines routes, route groups, and middlewares.
 - **`server.New(cfg, handler)`:** Takes that `*gin.Engine` (which implements `http.Handler`) and handles TCP listening, timeouts, and OS shutdown signals.
 
 ### Why This Is a Testing Superpower
+
 - Without this separation, every test must start a live `*http.Server`, bind to a real TCP port (risking port conflicts), and send real network requests.
 - With this separation, unit tests can call `router.New()` and use Go's standard `httptest.NewRecorder()`:
   ```go
@@ -212,13 +215,16 @@ Separating the **Router** (`internal/router/router.go`) from the **Server** (`in
 - [cmd/api/main.go](file:///home/larry_mosh/go-stuff/outpost/cmd/api/main.go)
 
 ### The Question Asked
-*"What if we didn't make it buffered and just said `make(chan os.Signal)`? How is it different from a buffered channel?"*
+
+_"What if we didn't make it buffered and just said `make(chan os.Signal)`? How is it different from a buffered channel?"_
 
 ### The Core Rule of Go Channels
+
 - **Receiving from an EMPTY channel (`sig := <-quit`) ALWAYS pauses/blocks**, whether buffered or unbuffered.
 - Buffering only affects the **sender**.
 
 ### Why Unbuffered Channels Break With `signal.Notify`
+
 - Per Go's official documentation: `signal.Notify` **does not block** when sending. If the channel is not ready to receive at the exact instant the signal fires, **the signal is silently discarded!**
 - With an unbuffered channel (`make(chan os.Signal)`), if the main goroutine is even a fraction of a microsecond busy during a garbage collection pause or thread context switch when you press `Ctrl+C`, the signal is dropped. Your server ignores `Ctrl+C` and refuses to terminate!
 - With a 1-slot buffered channel (`make(chan os.Signal, 1)`), the signal is safely placed into the mailbox without waiting. Zero dropped signals.
@@ -233,13 +239,16 @@ Separating the **Router** (`internal/router/router.go`) from the **Server** (`in
 - [internal/dto/application_dto.go](file:///home/larry_mosh/go-stuff/outpost/internal/dto/application_dto.go)
 
 ### The Question Asked
-*"In `ApplicationRepository`, we are returning `models.Application`. When are we going to return `ApplicationResponse`? And when do we take in `CreateApplicationRequest`?"*
+
+_"In `ApplicationRepository`, we are returning `models.Application`. When are we going to return `ApplicationResponse`? And when do we take in `CreateApplicationRequest`?"_
 
 ### The Mental Model: Citizens vs. Passports
+
 - **Models (`models.Application`):** "Citizens inside the Country." They mirror database rows and are used exclusively within internal application boundaries (Services, Repositories, Database).
 - **DTOs (`dto.CreateApplicationRequest`, `dto.ApplicationResponse`):** "Passports at the Border." They define the strict, public HTTP API contract.
 
 ### Why the Repository Never Knows About DTOs
+
 1. **Separation of Concerns:** The database layer persists data; it should never know about JSON tags or HTTP requests.
 2. **Reusability:** If we later create a background worker, CLI tool, or gRPC endpoint that creates applications, they don't have HTTP request objects. They can reuse the same Repository directly using `models.Application`.
 3. **Security (Preventing Accidental Leaks):** If you return database models directly as API responses, a developer might accidentally serialize internal columns (like password hashes or secret tokens) to the client. DTOs force explicit control over what enters and leaves the API boundary.
@@ -253,20 +262,23 @@ Separating the **Router** (`internal/router/router.go`) from the **Server** (`in
 - [internal/repository/application_repo.go](file:///home/larry_mosh/go-stuff/outpost/internal/repository/application_repo.go)
 
 ### The Question Asked
-*"What do you think about using GORM?"*
+
+_"What do you think about using GORM?"_
 
 ### Trade-Off Breakdown
 
-| Dimension | GORM (ORM) | Native `pgx` (SQL) |
-|---|---|---|
-| **Best For** | Rapid prototyping, standard CRUD, internal admin panels | High-throughput systems, distributed webhook engines |
-| **Performance** | Slower (runtime reflection on struct tags, extra allocations) | 2x-4x faster (compiled binary protocol, minimal allocations) |
-| **Query Control** | Abstraction layer (SQL generated behind your back) | 100% explicit (predictable, easy to `EXPLAIN ANALYZE`) |
-| **Advanced Concurrency** | Awkward for row-level locking (`FOR UPDATE SKIP LOCKED`) | Native, robust, clean SQL syntax |
-| **Engineering Mastery** | Hides how databases, indexes, and connections work | Deep understanding of connection pooling, transactions, and SQL |
+| Dimension                | GORM (ORM)                                                    | Native `pgx` (SQL)                                              |
+| ------------------------ | ------------------------------------------------------------- | --------------------------------------------------------------- |
+| **Best For**             | Rapid prototyping, standard CRUD, internal admin panels       | High-throughput systems, distributed webhook engines            |
+| **Performance**          | Slower (runtime reflection on struct tags, extra allocations) | 2x-4x faster (compiled binary protocol, minimal allocations)    |
+| **Query Control**        | Abstraction layer (SQL generated behind your back)            | 100% explicit (predictable, easy to `EXPLAIN ANALYZE`)          |
+| **Advanced Concurrency** | Awkward for row-level locking (`FOR UPDATE SKIP LOCKED`)      | Native, robust, clean SQL syntax                                |
+| **Engineering Mastery**  | Hides how databases, indexes, and connections work            | Deep understanding of connection pooling, transactions, and SQL |
 
 ### Why Outpost Uses `pgx`
+
 In a webhook delivery engine processing thousands of events/second, we need:
+
 1. Low latency and low memory allocations (fewer garbage collection spikes).
 2. Advanced PostgreSQL concurrency features (like `SKIP LOCKED` in our background worker pool).
 3. Explicit query visibility with atomic `RETURNING` clauses.
@@ -280,7 +292,9 @@ In a webhook delivery engine processing thousands of events/second, we need:
 - [internal/service/application_service.go](file:///home/larry_mosh/go-stuff/outpost/internal/service/application_service.go)
 
 ### The Concept
+
 When generating security credentials (like our `op_live_...` API keys):
+
 - **Never use `math/rand`:** It is a pseudo-random number generator (PRNG) designed for simulations. Given the seed, an attacker can mathematically deduce the next 1,000 keys.
 - **Always use `crypto/rand`:** It pulls true entropy from the Linux kernel's cryptographically secure randomness pool (`/dev/urandom`).
 - **Entropy Calculation:** Generating 24 random bytes provides **192 bits of entropy**. Hex-encoded into 48 characters with `op_live_`, it would take trillions of years for modern supercomputers to brute-force.
@@ -295,7 +309,9 @@ When generating security credentials (like our `op_live_...` API keys):
 - [internal/handler/application_handler.go](file:///home/larry_mosh/go-stuff/outpost/internal/handler/application_handler.go)
 
 ### The Concept
+
 Using Gin struct binding tags: `binding:"required,min=1,max=255"`:
+
 - If a client sends an empty payload `{}` or a 5,000-character name, Gin rejects it immediately with `400 Bad Request`.
 - **Why this matters:** Malicious or malformed data is stopped at the HTTP gate before it ever wastes Service CPU cycles or executes a PostgreSQL query.
 
@@ -310,9 +326,11 @@ Using Gin struct binding tags: `binding:"required,min=1,max=255"`:
 - [internal/handler/application_handler.go](file:///home/larry_mosh/go-stuff/outpost/internal/handler/application_handler.go)
 
 ### The Architectural Question
-*"Should we wrap every API response in an envelope `{ success, message, data, error }`, or return direct representations?"*
+
+_"Should we wrap every API response in an envelope `{ success, message, data, error }`, or return direct representations?"_
 
 ### Key Design Decisions
+
 1. **Developer-First Payload Design (Option B):**
    - Developer platforms like Stripe, GitHub, and Svix return direct objects on success (`{"id": "...", "name": "..."}`). This eliminates tedious `.data.data.id` chaining in consumer SDKs and frontend apps.
    - Standardized error contracts (`{ "error": "description" }`) provide a predictable single point of inspection for all $4xx$ and $5xx$ responses.
@@ -335,10 +353,13 @@ Using Gin struct binding tags: `binding:"required,min=1,max=255"`:
 - [internal/handler/application_handler.go](file:///home/larry_mosh/go-stuff/outpost/internal/handler/application_handler.go)
 
 ### The Architectural Question
-*"If `CreateApplication` takes a request DTO, why shouldn't it return a response DTO? And what happens when a service method needs 5+ parameters?"*
+
+_"If `CreateApplication` takes a request DTO, why shouldn't it return a response DTO? And what happens when a service method needs 5+ parameters?"_
 
 ### The Design Decision: Decoupling via `CreateApplicationParams`
+
 Instead of passing HTTP DTOs into our service or creating messy positional parameter lists, we define a dedicated `Params` struct in the service:
+
 ```go
 type CreateApplicationParams struct {
     Name string
@@ -346,6 +367,7 @@ type CreateApplicationParams struct {
 ```
 
 ### Why This Is Superior
+
 1. **Purity & Transport Agnosticism:**
    - `internal/service/` does not import `internal/dto`. It is 100% pure Go.
    - It has no JSON tags, no Gin binding tags, and no knowledge of HTTP.
@@ -367,7 +389,8 @@ type CreateApplicationParams struct {
 - [internal/handler/application_handler.go](file:///home/larry_mosh/go-stuff/outpost/internal/handler/application_handler.go)
 
 ### The Question Asked
-*"Why is `ApplicationService` an interface with capital A, `applicationService` a struct with lowercase a, and `ApplicationHandler` holds the interface?"*
+
+_"Why is `ApplicationService` an interface with capital A, `applicationService` a struct with lowercase a, and `ApplicationHandler` holds the interface?"_
 
 ### The Breakdown
 
@@ -392,7 +415,8 @@ type CreateApplicationParams struct {
 - [internal/service/application_service.go](file:///home/larry_mosh/go-stuff/outpost/internal/service/application_service.go)
 
 ### The Question Asked
-*"Is it `rand.Read` that selects one, or what? And what does 192 bits of entropy mean?"*
+
+_"Is it `rand.Read` that selects one, or what? And what does 192 bits of entropy mean?"_
 
 ### The Breakdown
 
@@ -425,7 +449,8 @@ type CreateApplicationParams struct {
 - [internal/handler/application_handler.go](file:///home/larry_mosh/go-stuff/outpost/internal/handler/application_handler.go)
 
 ### The Question Asked
-*"Why are we adding `repo` inside `applicationService` struct? Why are we hiding it?"*
+
+_"Why are we adding `repo` inside `applicationService` struct? Why are we hiding it?"_
 
 ### The Breakdown
 
@@ -451,11 +476,13 @@ type CreateApplicationParams struct {
 - [internal/middleware/recovery.go](file:///home/larry_mosh/go-stuff/outpost/internal/middleware/recovery.go)
 
 ### 1. The Critical Role of `c.Abort()` in Gin
+
 - In Gin, calling `response.Unauthorized(c, ...)` writes the HTTP 401 response header, but **it does NOT stop Gin from calling the remaining handlers in the pipeline!**
 - If you forget `c.Abort()`, Gin will continue executing the downstream protected handler, causing bugs or double-writes.
 - Calling `c.Abort()` halts the chain immediately.
 
 ### 2. Context Attachment (`c.Set` / Type-Safe Getters)
+
 - Once the auth middleware verifies an API key against the database, we attach the tenant: `c.Set(ApplicationContextKey, app)`.
 - Rather than forcing downstream handlers to do untyped `val, _ := c.Get("application")` and manual casting `val.(*models.Application)`, we provide a type-safe helper:
   ```go
@@ -464,10 +491,12 @@ type CreateApplicationParams struct {
   This prevents typos in context keys and guarantees type safety.
 
 ### 3. Middleware Sandwich Timing (`c.Next()`)
+
 - In `RequestLogger`, calling `start := time.Now()` before `c.Next()`, and `latency := time.Since(start)` after `c.Next()` allows measuring the exact end-to-end processing time taken by all downstream handlers.
 - Dynamic log level selection: Status $\ge 500 \rightarrow$ `log.Error()`, Status $\ge 400 \rightarrow$ `log.Warn()`, Status $< 400 \rightarrow$ `log.Info()`.
 
 ### 4. Resilient Panic Recovery
+
 - Using Go's built-in `recover()` inside a deferred function intercepts unexpected runtime panics (e.g. nil pointers or out-of-bounds index).
 - It logs the stack trace to Zerolog and returns a sanitized JSON 500 error (`response.InternalServerError(c)`), ensuring unexpected crashes never take down the entire Outpost process.
 
@@ -484,14 +513,17 @@ type CreateApplicationParams struct {
 - [internal/middleware/auth.go](file:///home/larry_mosh/go-stuff/outpost/internal/middleware/auth.go)
 
 ### The Question Asked
-*"I noticed that we usually trimspace with `strings.TrimSpace`. Can you let me see how important it is to do that? And what is likely to happen if we don't?"*
+
+_"I noticed that we usually trimspace with `strings.TrimSpace`. Can you let me see how important it is to do that? And what is likely to happen if we don't?"_
 
 ### What `strings.TrimSpace` Does
-`strings.TrimSpace(s)` scans a string from both ends and removes all leading and trailing whitespace characters (spaces `' '`, tabs `\t`, newlines `\n`, carriage returns `\r`, and Unicode spaces). It leaves whitespace *between* words untouched (e.g., `"  Payment Webhook  "` $\rightarrow$ `"Payment Webhook"`).
+
+`strings.TrimSpace(s)` scans a string from both ends and removes all leading and trailing whitespace characters (spaces `' '`, tabs `\t`, newlines `\n`, carriage returns `\r`, and Unicode spaces). It leaves whitespace _between_ words untouched (e.g., `"  Payment Webhook  "` $\rightarrow$ `"Payment Webhook"`).
 
 ### The 5 Catastrophic Failure Modes If We Don't Trim
 
 #### 1. Silent Ghost Failures in Webhook Matching (The Webhook Engine Killer)
+
 - **In `subscription_service.go`**:
   ```go
   trimmedEvent := strings.TrimSpace(eventTypeName)
@@ -505,6 +537,7 @@ type CreateApplicationParams struct {
   - In logs or UI dashboards, both strings render identically as `user_123`, making this one of the most frustrating bugs to diagnose in production.
 
 #### 2. Invisible "Empty String" Validation Bypasses
+
 - **In `application_service.go` & `event_type_service.go`**:
   ```go
   trimmedName := strings.TrimSpace(params.Name)
@@ -517,6 +550,7 @@ type CreateApplicationParams struct {
   - It gets saved to the database as a "ghost" application or event type with a blank name, polluting database records and breaking UI displays.
 
 #### 3. Broken HTTP URL Parsing & Dispatch Crashes
+
 - **In `endpoint_service.go`**:
   ```go
   trimmedURL := strings.TrimSpace(params.URL)
@@ -528,12 +562,14 @@ type CreateApplicationParams struct {
   - Every single delivery attempt to that endpoint fails immediately before even leaving the server.
 
 #### 4. Phantom Duplicate Violations vs. Accidental Uniqueness Bypasses
+
 - **The Failure**:
   - PostgreSQL unique constraints consider `"payment.success"` and `"payment.success "` to be completely different values.
   - If two different developers register those names, both rows are created in the database.
   - Later, when consumers subscribe to `"payment.success"`, subscriptions get split between two phantom event types.
 
 #### 5. Broken Authentication Headers
+
 - **In `middleware/auth.go`**:
   ```go
   apiKey := strings.TrimSpace(parts[1])
@@ -546,10 +582,12 @@ type CreateApplicationParams struct {
 ---
 
 ### The Analogy: The "Grit in the Keyhole"
-Think of string lookups like a brass physical key entering a cylinder lock. 
-To the human eye from three feet away, a key with a tiny speck of lint glued to its tip looks indistinguishable from a clean key. But when you slide it into the tumbler, the pins won't align and the door refuses to open. 
+
+Think of string lookups like a brass physical key entering a cylinder lock.
+To the human eye from three feet away, a key with a tiny speck of lint glued to its tip looks indistinguishable from a clean key. But when you slide it into the tumbler, the pins won't align and the door refuses to open.
 
 In computer memory:
+
 - `"user_123"` is bytes: `[117, 115, 101, 114, 95, 49, 50, 51]` (8 bytes)
 - `"user_123 "` is bytes: `[117, 115, 101, 114, 95, 49, 50, 51, 32]` (9 bytes)
 
@@ -565,15 +603,18 @@ To a database index or hash table, they are two completely different universes. 
 - [internal/dto/subscription_dto.go](file:///home/larry_mosh/go-stuff/outpost/internal/dto/subscription_dto.go)
 
 ### The Question Asked
-*"I noticed that we pass endpoint id via the params and not the body, and we pass the event type via the body. Can you tell me the thought process behind that? What will happen if I pass endpointId via the body? Will it cause a problem?"*
+
+_"I noticed that we pass endpoint id via the params and not the body, and we pass the event type via the body. Can you tell me the thought process behind that? What will happen if I pass endpointId via the body? Will it cause a problem?"_
 
 ### 1. The Core Thought Process: Sub-Resource Hierarchy
+
 In RESTful API design, URLs represent **resources (nouns)** and HTTP methods represent **actions (verbs)**:
+
 - Subscriptions in Outpost do not exist in a vacuum; they belong to an **Endpoint**.
 - Look at the URI structure:
-  - `POST   /api/v1/endpoints/:id/subscriptions` $\rightarrow$ *"Under this endpoint, create a subscription"*
-  - `GET    /api/v1/endpoints/:id/subscriptions` $\rightarrow$ *"Under this endpoint, list all subscriptions"*
-  - `DELETE /api/v1/endpoints/:id/subscriptions/:event_type_id` $\rightarrow$ *"Under this endpoint, remove this event type"*
+  - `POST   /api/v1/endpoints/:id/subscriptions` $\rightarrow$ _"Under this endpoint, create a subscription"_
+  - `GET    /api/v1/endpoints/:id/subscriptions` $\rightarrow$ _"Under this endpoint, list all subscriptions"_
+  - `DELETE /api/v1/endpoints/:id/subscriptions/:event_type_id` $\rightarrow$ _"Under this endpoint, remove this event type"_
 - **Rule of Thumb:**
   - **Path Parameter (`:id`)**: Identifies the **parent container / context** of the operation.
   - **Request Body (`{"event_type_id": "..."}`)**: Supplies the **payload / details** of what is being added to that container.
@@ -583,7 +624,9 @@ In RESTful API design, URLs represent **resources (nouns)** and HTTP methods rep
 There are two scenarios:
 
 #### Scenario A: Passing it in the body WHILE keeping the URL `/endpoints/:id/subscriptions` (The Split-Brain Risk)
+
 If the URL is `/endpoints/1111/subscriptions` and the body is `{"endpoint_id": "2222", "event_type_id": "3333"}`:
+
 - **Ambiguity**: Which endpoint is the source of truth? Does the server subscribe `1111` or `2222`?
 - **Redundant Validation**: You are forced to add defensive boilerplate:
   ```go
@@ -595,7 +638,9 @@ If the URL is `/endpoints/1111/subscriptions` and the body is `{"endpoint_id": "
 - **Violates DRY**: Clients have to send the exact same ID twice in the same request.
 
 #### Scenario B: Flat URL Pattern (`POST /api/v1/subscriptions` with both IDs in the body)
+
 Could we design the route as `POST /api/v1/subscriptions` with `{ "endpoint_id": "...", "event_type_id": "..." }`?
+
 - **Will it cause a system crash or compiler error?** No. It is a valid alternative called the **Flat Resource Pattern**.
 - **Why the Sub-Resource Pattern is better here:**
   1. **Consistent Lifecycle & Route Nesting:** Listing subscriptions naturally scopes to `/endpoints/:id/subscriptions`. In a flat API, you must invent query parameter filters (`/subscriptions?endpoint_id=:id`).
@@ -608,26 +653,238 @@ Could we design the route as `POST /api/v1/subscriptions` with `{ "endpoint_id":
 
 Whenever designing an API endpoint, remember this simple 2-part rule:
 
-| Layer | The Question It Answers | Real-World Analogy | Outpost Example |
-|---|---|---|---|
-| **URL Path** | **WHERE** are you going? *(The Room / Container)* | Walking up to **Apartment 4B** | `/endpoints/4b/subscriptions` |
-| **Request Body** | **WHAT** are you delivering? *(The Package)* | Handing the tenant a **Letter** | `{"event_type_id": "letter"}` |
+| Layer            | The Question It Answers                           | Real-World Analogy              | Outpost Example               |
+| ---------------- | ------------------------------------------------- | ------------------------------- | ----------------------------- |
+| **URL Path**     | **WHERE** are you going? _(The Room / Container)_ | Walking up to **Apartment 4B**  | `/endpoints/4b/subscriptions` |
+| **Request Body** | **WHAT** are you delivering? _(The Package)_      | Handing the tenant a **Letter** | `{"event_type_id": "letter"}` |
 
 #### The "Can it exist alone?" Test (Parent vs. Child)
-Ask yourself: *"Can this thing exist in the database without the other thing?"*
+
+Ask yourself: _"Can this thing exist in the database without the other thing?"_
+
 - Can an **Endpoint** exist alone? **Yes** $\rightarrow$ It gets its own top-level URL: `/endpoints`
 - Can an **Event Type** exist alone? **Yes** $\rightarrow$ It gets its own top-level URL: `/event-types`
 - Can a **Subscription** exist without an Endpoint? **No!** $\rightarrow$ It lives inside the Endpoint's URL: `/endpoints/:id/subscriptions`
 
+---
 
+## 20. Partial Index Predicate Optimization (The Redundant Column Anti-Pattern)
 
+**Related Code:**
 
+- [migrations/006_create_delivery_attempts_table.up.sql](file:///home/larry_mosh/go-stuff/outpost/migrations/006_create_delivery_attempts_table.up.sql)
 
+### The Question Asked
 
+_"Why can't we just say `CREATE INDEX IF NOT EXISTS idx_delivery_attempts_dispatcher ON delivery_attempts(next_retry_at) WHERE status = 'pending';` instead of `ON delivery_attempts(status, next_retry_at) WHERE status = 'pending';`?"_
 
+### The Architecture & Database Deep Dive
 
+When designing partial indexes in PostgreSQL, understanding how the B-Tree is constructed is critical:
 
+#### 1. What a Partial Index Does
 
+A partial index (`WHERE status = 'pending'`) excludes all rows from the index that do NOT match the predicate. In a high-volume webhook engine:
+- Out of 10,000,000 delivery attempts, 9,990,000 are `delivered` or `failed`.
+- Only 10,000 are `pending`.
+- The index only holds pointers to those 10,000 rows, making it 99.9% smaller and fitting entirely in RAM cache.
 
+#### 2. The Redundancy of `(status, next_retry_at)`
+
+If the index is declared as `ON delivery_attempts(status, next_retry_at) WHERE status = 'pending'`:
+- Every single entry inside this index already has `status = 'pending'`.
+- The `status` column has a cardinality of **1** inside the index.
+- Indexing `status` wastes 8+ bytes per row on disk and in memory storing the exact same string repeated millions of times.
+
+#### 3. The Optimal Design: `ON delivery_attempts(next_retry_at) WHERE status = 'pending'`
+
+- The query planner knows that any query with `WHERE status = 'pending' AND next_retry_at <= NOW()` satisfies the partial predicate.
+- The B-Tree only sorts by `next_retry_at`.
+- The dispatcher worker can execute an ultrafast range scan directly on `next_retry_at`, finding the oldest due jobs with minimum memory footprint.
+
+---
+
+## 21. Queued Deliveries vs. Direct Event Response (Write Outcome vs. Read Entity)
+
+**Related Code:**
+
+- [internal/dto/event_dto.go](file:///home/larry_mosh/go-stuff/outpost/internal/dto/event_dto.go)
+- [internal/handler/event_handler.go](file:///home/larry_mosh/go-stuff/outpost/internal/handler/event_handler.go)
+
+### The Question Asked
+
+_"I haven't fully understood why we need IngestEventResponse and EventResponse separately. What is Queued Deliveries?"_
+
+### The Architecture Deep Dive
+
+Webhook ingestion is an **asynchronous dispatch** system, not a synchronous CRUD operation:
+
+#### 1. What is `queued_deliveries`?
+
+When a tenant publishes an event (`payment.succeeded`), Outpost doesn't immediately make HTTP network calls to endpoints. Doing so would freeze the tenant's API request for seconds.
+Instead:
+- Outpost accepts the event.
+- It finds all subscriptions matching the event type and tenant recipient.
+- It writes $N$ rows into `delivery_attempts` with `status = 'pending'`.
+- `queued_deliveries: N` informs the caller: _"We validated your event and successfully scheduled N background webhook dispatches."_
+
+#### 2. Why Two Separate DTOs?
+
+- **`IngestEventResponse` (202 Accepted)**: Represents the **outcome of the ingestion action**. It returns `status: "accepted"` and `queued_deliveries: 3`. It answers: _"What did the engine just do with my request?"_
+- **`EventResponse` (200 OK)**: Represents the **persistent state of an event resource** at rest (`GET /api/v1/events/:id`). It returns the stored event payload, application ID, created timestamp, etc. It does not report transient queue metrics.
+
+Mixing these two into a single struct forces nullable fields (`queued_deliveries` would be meaningless on a `GET`), violating clean API contracts.
+
+---
+
+## 22. Idiomatic Transaction Rollback (`defer tx.Rollback(ctx)`)
+
+**Related Code:**
+
+- [internal/repository/event_repo.go](file:///home/larry_mosh/go-stuff/outpost/internal/repository/event_repo.go)
+
+### The Question Asked
+
+_"You deferred Rollback as in `defer tx.Rollback(ctx)`. I thought that will only happen if there is a failure with the transaction. Why defer it unconditionally?"_
+
+### The Mental Model: The Safety Net
+
+In Go database programming with `pgx` or `database/sql`, the standard, bulletproof idiom for transaction safety is:
+
+```go
+tx, err := pool.Begin(ctx)
+if err != nil {
+    return err
+}
+defer tx.Rollback(ctx) // <--- Unconditionally deferred safety net
+
+// ... execute queries on tx ...
+
+return tx.Commit(ctx)
+```
+
+#### Why this works without canceling successful transactions:
+
+1. **Idempotent / No-Op after Commit:** When `tx.Commit(ctx)` succeeds, the transaction is finalized on PostgreSQL. The database connection transitions out of the transaction state.
+2. **When the function exits**, the deferred `tx.Rollback(ctx)` executes. In `pgx`, if the transaction has already been committed (or already rolled back), calling `Rollback()` is a **guaranteed safe no-op** (returns `pgx.ErrTxClosed`, which `pgx` handles silently).
+3. **Guaranteed Cleanup on Panic or Early Error:** If any query fails, or if a panic occurs, or if context expires:
+   - The function returns before reaching `tx.Commit(ctx)`.
+   - The deferred `Rollback()` is guaranteed to execute during stack unwinding.
+   - Without this defer, an uncommitted transaction holds table/row locks open in PostgreSQL until connection timeout, causing cascading database deadlocks.
+
+---
+
+## 23. The Inward Dependency Rule & Service Purity (`models.IngestResult`)
+
+**Related Code:**
+
+- [internal/models/event.go](file:///home/larry_mosh/go-stuff/outpost/internal/models/event.go)
+- [internal/service/event_service.go](file:///home/larry_mosh/go-stuff/outpost/internal/service/event_service.go)
+- [internal/handler/event_handler.go](file:///home/larry_mosh/go-stuff/outpost/internal/handler/event_handler.go)
+- [internal/dto/event_dto.go](file:///home/larry_mosh/go-stuff/outpost/internal/dto/event_dto.go)
+
+### The Question Asked
+
+_"So far, we've been returning models.* in the service, but for event_service we returned from dto. Is that the best thing to do? Could a CLI tool still work? Isn't it just a consistency issue?"_
+
+### The Architectural Breakdown
+
+While Go's compiler would technically allow any package to import DTOs, doing so violates the **Inward Dependency Rule** of Clean Architecture:
+
+```
+[ Outer Layer: Handlers, CLI, gRPC, DTOs ]
+                   │
+                   ▼  (Imports point inward)
+[ Middle Layer: Service / Business Logic ]
+                   │
+                   ▼  (Imports point inward)
+[ Inner Core:   Domain Models & Repositories ]
+```
+
+#### 1. Why `event_service` temporarily returned a DTO
+
+Other services (`ApplicationService`, `EndpointService`) create and return a single database entity (`*models.Application`, `*models.Endpoint`).
+`SendEvent`, however, produces:
+- The persisted `*models.Event`
+- The fan-out delivery count (`queuedDeliveries: 3`)
+
+Because no single entity held both, returning `dto.IngestEventResponse` was an easy shortcut.
+
+#### 2. The Architectural Flaws of that Shortcut
+
+1. **Coupling to Transport:** The service layer imported `internal/dto`. Any future consumer (e.g. a CLI tool `outpost ingest`, a Kafka subscriber, or a gRPC server) would be forced to import HTTP response DTOs to ingest events.
+2. **Breaking Codebase Consistency:** When 4 out of 5 services return domain models and 1 returns a DTO, engineers joining the team don't know which convention to follow, leading to architectural erosion.
+3. **Leaking API Presentation into Business Logic:** If an API client requests a field format change in the HTTP JSON response, the service layer should never change.
+
+#### 3. The Pure Solution: `models.IngestResult`
+
+We created a dedicated domain model:
+```go
+type IngestResult struct {
+    Event            *Event
+    EventTypeName    string
+    QueuedDeliveries int
+}
+```
+- `EventService.SendEvent` returns `(*models.IngestResult, error)`.
+- `internal/service/event_service.go` has **zero imports** of `internal/dto`.
+- `internal/handler/event_handler.go` is the sole boundary responsible for mapping `models.IngestResult` to `dto.IngestEventResponse`.
+
+---
+
+## 24. PostgreSQL Error 23505 & Precise Constraint Name Matching (`pgErr.ConstraintName`)
+
+**Related Code:**
+
+- [internal/repository/event_repo.go](file:///home/larry_mosh/go-stuff/outpost/internal/repository/event_repo.go)
+- [internal/service/event_service.go](file:///home/larry_mosh/go-stuff/outpost/internal/service/event_service.go)
+- [migrations/005_create_events_table.up.sql](file:///home/larry_mosh/go-stuff/outpost/migrations/005_create_events_table.up.sql)
+
+### The Question Asked
+
+_"Why would Postgres throw 23505 if a user sends an event without an idempotency key when idempotency is optional? Why do we need `&& cleanedKey != nil`?"_
+
+### The Architecture & Database Deep Dive
+
+#### 1. What is Error Code `23505`?
+In standard SQLSTATE specifications, `23505` is **NOT** specific to idempotency keys. It is the universal code for **`unique_violation`**.
+In PostgreSQL, `23505` fires whenever **ANY** unique constraint in the table or transaction fails:
+- Primary key collisions (`events_pkey` on `id UUID`)
+- Explicit unique constraints (`uq_events_app_idempotency`)
+- Future unique indexes added by new migrations
+
+#### 2. The Danger of Blindly Checking `pgErr.Code == "23505"`
+If your repository blindly returns `ErrDuplicateIdempotencyKey` whenever `pgErr.Code == "23505"`:
+```go
+// ⚠️ NAIVE IMPLEMENTATION:
+if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+    return ErrDuplicateIdempotencyKey
+}
+```
+Then **any** unique violation (even a primary key collision on an event *without* an idempotency key) gets falsely labeled as a duplicate idempotency key!
+
+If the upstream service attempts to dereference `*cleanedKey` without checking `cleanedKey != nil`, **the server crashes with a nil pointer panic.**
+
+#### 3. The Professional Two-Layer Solution
+
+1. **In Repository (Match the Constraint Name):**
+   PostgreSQL provides `pgErr.ConstraintName`. We verify that the violation came specifically from our partial index:
+   ```go
+   if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+       if pgErr.ConstraintName == "uq_events_app_idempotency" {
+           return ErrDuplicateIdempotencyKey
+       }
+       return fmt.Errorf("unique constraint violation on %s: %w", pgErr.ConstraintName, err)
+   }
+   ```
+2. **In Service (The Defensive Seatbelt):**
+   Never dereference a pointer (`*cleanedKey`) without first guarding against `nil`:
+   ```go
+   if errors.Is(err, repository.ErrDuplicateIdempotencyKey) && cleanedKey != nil {
+       existing, getErr := s.eventRepo.GetByIdempotencyKey(ctx, appID, *cleanedKey)
+       ...
+   }
+   ```
+This two-layer defense ensures that database errors are accurately categorized, and Go pointer operations are mathematically panic-free.
 
 

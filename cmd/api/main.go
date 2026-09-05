@@ -73,13 +73,17 @@ func main() {
 	subscriptionService := service.NewSubscriptionService(subscriptionRepo, endpointRepo, eventTypeRepo)
 	subscriptionHandler := handler.NewSubscriptionHandler(subscriptionService)
 
+	eventRepo := repository.NewPostgresEventRepository(dbPool)
+	eventService := service.NewEventService(eventRepo, eventTypeRepo, subscriptionRepo)
+	eventHandler := handler.NewEventHandler(eventService)
+
 	// Build HTTP Router (Routing & Middlewares)
 	r := router.New(router.RouterParams{
 		Config:          cfg,
 		Logger:          log,
 		AuthMiddleware:  authMiddleware,
 		PublicRoutes:    []router.RouteRegistrar{appHandler},
-		ProtectedRoutes: []router.RouteRegistrar{authHandler, endpointHandler, eventTypeHandler, subscriptionHandler},
+		ProtectedRoutes: []router.RouteRegistrar{authHandler, endpointHandler, eventTypeHandler, subscriptionHandler, eventHandler},
 	})
 
 	// Initialize HTTP Server (Transport Lifecycle)

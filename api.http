@@ -135,3 +135,46 @@ Accept: application/json
 ### Unsubscribe Endpoint from Event Type
 DELETE {{baseUrl}}/api/v1/endpoints/{{endpointId}}/subscriptions/{{eventTypeId}}
 Authorization: Bearer {{apiKey}}
+
+### Ingest Event (payment.succeeded - 202 Accepted)
+# @name ingestEvent
+POST {{baseUrl}}/api/v1/events
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "event_type": "payment.succeeded",
+  "recipient_id": "merchant_acme_01",
+  "payload": {
+    "order_id": "ord_acme_1001",
+    "customer": {
+      "name": "Jane Doe",
+      "email": "jane@example.com"
+    },
+    "amount": 14999,
+    "currency": "USD"
+  },
+  "idempotency_key": "tx_order_acme_1001"
+}
+
+### Get Ingested Event Details
+@ingestedEventId = {{ingestEvent.response.body.id}}
+GET {{baseUrl}}/api/v1/events/{{ingestedEventId}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Idempotency Retry Test (Same Key -> No Duplicate Deliveries)
+POST {{baseUrl}}/api/v1/events
+Authorization: Bearer {{apiKey}}
+Content-Type: application/json
+
+{
+  "event_type": "payment.succeeded",
+  "recipient_id": "merchant_acme_01",
+  "payload": {
+    "order_id": "ord_acme_1001",
+    "amount": 14999
+  },
+  "idempotency_key": "tx_order_acme_1001"
+}
+

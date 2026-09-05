@@ -37,6 +37,11 @@ func Created(c *gin.Context, data any) {
 	c.JSON(http.StatusCreated, data)
 }
 
+// Accepted sends a 202 Accepted response with the provided payload.
+func Accepted(c *gin.Context, data any) {
+	c.JSON(http.StatusAccepted, data)
+}
+
 // NoContent sends a 204 No Content response.
 func NoContent(c *gin.Context) {
 	c.Status(http.StatusNoContent)
