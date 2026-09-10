@@ -26,6 +26,9 @@ type DatabaseConfig struct {
 // EngineConfig holds background delivery engine options.
 type EngineConfig struct {
 	WorkerCount    int
+	QueueSize      int
+	PollInterval   time.Duration
+	BatchSize      int
 	MaxRetries     int
 	RetryBaseDelay time.Duration
 }
@@ -56,6 +59,9 @@ func Load() (*Config, error) {
 		},
 		Engine: EngineConfig{
 			WorkerCount:    getEnvInt("WORKER_COUNT", 5),
+			QueueSize:      getEnvInt("QUEUE_SIZE", 100),
+			PollInterval:   getEnvDuration("DISPATCHER_POLL_INTERVAL", 2*time.Second),
+			BatchSize:      getEnvInt("DISPATCHER_BATCH_SIZE", 50),
 			MaxRetries:     getEnvInt("MAX_RETRIES", 5),
 			RetryBaseDelay: getEnvDuration("RETRY_BASE_DELAY", 30*time.Second),
 		},
@@ -88,6 +94,15 @@ func (c *Config) Validate() error {
 	}
 	if c.Engine.WorkerCount <= 0 {
 		return fmt.Errorf("WORKER_COUNT must be greater than 0")
+	}
+	if c.Engine.QueueSize <= 0 {
+		return fmt.Errorf("QUEUE_SIZE must be greater than 0")
+	}
+	if c.Engine.PollInterval <= 0 {
+		return fmt.Errorf("DISPATCHER_POLL_INTERVAL must be greater than 0")
+	}
+	if c.Engine.BatchSize <= 0 {
+		return fmt.Errorf("DISPATCHER_BATCH_SIZE must be greater than 0")
 	}
 	if c.Engine.MaxRetries < 0 {
 		return fmt.Errorf("MAX_RETRIES cannot be negative")

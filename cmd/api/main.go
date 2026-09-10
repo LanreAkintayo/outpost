@@ -13,6 +13,7 @@ import (
 
 	"github.com/LanreAkintayo/outpost/internal/config"
 	"github.com/LanreAkintayo/outpost/internal/database"
+	"github.com/LanreAkintayo/outpost/internal/engine"
 	"github.com/LanreAkintayo/outpost/internal/handler"
 	"github.com/LanreAkintayo/outpost/internal/logger"
 	"github.com/LanreAkintayo/outpost/internal/middleware"
@@ -77,6 +78,45 @@ func main() {
 	eventService := service.NewEventService(eventRepo, eventTypeRepo, subscriptionRepo)
 	eventHandler := handler.NewEventHandler(eventService)
 
+	// Wire Webhook Delivery Engine (Repository, Deliverer, WorkerPool, Dispatcher)
+	deliveryRepo := repository.NewPostgresDeliveryRepository(dbPool)
+	deliverer := engine.NewHTTPDeliverer(30 * time.Second)
+
+	onComplete := func(ctx context.Context, task engine.DeliveryTask, result *engine.DeliveryResult) {
+		writeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := deliveryRepo.RecordResult(writeCtx, task.AttemptID, result); err != nil {
+			log.Error().
+				Err(err).
+				Str("attempt_id", task.AttemptID.String()).
+				Msg("failed to record delivery attempt result in database")
+			return
+		}
+
+		log.Info().
+			Str("attempt_id", task.AttemptID.String()).
+			Str("endpoint_url", task.EndpointURL).
+			Bool("success", result.Success).
+			Int("duration_ms", result.ExecutionDurationMS).
+			Msg("webhook delivery attempt processed")
+	}
+
+	workerPool := engine.NewWorkerPool(cfg.Engine.WorkerCount, cfg.Engine.QueueSize, deliverer, onComplete)
+	workerPool.Start()
+	log.Info().
+		Int("workers", cfg.Engine.WorkerCount).
+		Int("queue_size", cfg.Engine.QueueSize).
+		Msg("delivery worker pool started")
+
+	dispatcherCfg := engine.DispatcherConfig{
+		PollInterval:   cfg.Engine.PollInterval,
+		BatchSize:      cfg.Engine.BatchSize,
+		EnqueueTimeout: 2 * time.Second,
+	}
+	dispatcher := engine.NewDispatcher(deliveryRepo, workerPool, dispatcherCfg, log)
+	dispatcher.Start()
+
 	// Build HTTP Router (Routing & Middlewares)
 	r := router.New(router.RouterParams{
 		Config:          cfg,
@@ -102,13 +142,22 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	sig := <-quit
-	log.Info().Str("signal", sig.String()).Msg("shutdown signal received, closing server gracefully...")
+	log.Info().Str("signal", sig.String()).Msg("shutdown signal received, closing services gracefully...")
 
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// Stop dispatcher so it stops claiming new tasks from the database
+	dispatcher.Stop()
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()
 
+	// Shut down HTTP Server
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Error().Err(err).Msg("server forced to shutdown due to timeout")
+	}
+
+	// Drain remaining in-flight tasks in worker pool
+	if err := workerPool.Shutdown(shutdownCtx); err != nil {
+		log.Error().Err(err).Msg("worker pool forced to shutdown due to timeout")
 	}
 
 	log.Info().Msg("server exited cleanly")
